@@ -1,0 +1,79 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import pickle
+from matplotlib import style
+import sklearn
+from sklearn import linear_model
+
+
+def save_model(model, model_name):
+    # Saving the model with pickle
+    with open(model_name, "wb") as f:
+        pickle.dump(model, f)
+
+
+def read_model(filename):
+    # Loading model from pickle
+    pickle_input = open(filename, "rb")
+    return pickle.load(pickle_input)
+
+
+def choose_best_linear_regression(filename, steps=100):
+    # Choosing to save the best model out of number of N models
+    best_accuracy = 0
+    for _ in range(steps):
+        # Splitting into test and train data
+        X_train, X_test, Y_train, Y_test = sklearn.model_selection.train_test_split(X, Y, test_size=0.1)
+
+        # Creating the model
+        linear_regression = linear_model.LinearRegression()
+
+        # Training the model with train data
+        linear_regression.fit(X_train, Y_train)
+
+        # Accuracy tracking
+        accuracy = linear_regression.score(X_test, Y_test)
+
+        # Saving the model if better than best
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
+            save_model(linear_regression, filename)
+
+
+# Importing the data
+data = pd.read_csv("student-mat.csv", sep=";")
+data = data[["G1", "G2", "G3", "studytime", "failures", "absences"]]
+
+# Initializing the dependant variable name (prediction value)
+label = "G3"
+
+# Splitting into dependant and independent variable
+X = np.array(data.drop([label], 1))
+Y = np.array(data[label])
+
+# Saving the best out of 1000 models via pickle
+choose_best_linear_regression("student_model.pickle", 1000)
+
+# Splitting into test and train data
+X_train, X_test, Y_train, Y_test = sklearn.model_selection.train_test_split(X, Y, test_size=0.1)
+
+# Reading the model
+linear_regression = read_model("student_model.pickle")
+
+# Tracking the accuracy of our model
+accuracy_track = linear_regression.score(X_test, Y_test)
+print("Accuracy : ", accuracy_track)
+print("Weights : ", linear_regression.coef_)
+print("Bias term : ", linear_regression.intercept_)
+
+# Prediction on test data
+Y_prediction = linear_regression.predict(X_test)
+
+# Plotting the initial data
+dependent_scatter_value = "G1"
+style.use("ggplot")
+plt.scatter(data[dependent_scatter_value], data[label])
+plt.xlabel(dependent_scatter_value)
+plt.ylabel(label)
+plt.show()
